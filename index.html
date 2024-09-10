@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video/Image Analysis</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 100%;
+            margin: 20px;
+            padding: 30px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #4CAF50;
+            margin-bottom: 20px;
+            font-size: 24px;
+            letter-spacing: 1px;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+
+        textarea {
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            resize: vertical;
+            min-height: 80px;
+            font-size: 16px;
+            font-family: 'Arial', sans-serif;
+            width: 100%; /* Make textarea stretch across the container */
+            box-sizing: border-box; /* Ensure padding and border are included in the width */
+        }
+
+        input[type="file"] {
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 20px;
+        }
+
+        .checkbox-group label {
+            margin-bottom: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+        }
+
+        .checkbox-group input {
+            margin-right: 10px;
+        }
+
+        .button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            text-align: center;
+            transition: background-color 0.3s ease;
+        }
+
+        .button:hover {
+            background-color: #45a049;
+        }
+
+        #results {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        pre {
+            background-color: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 14px;
+            color: #333;
+        }
+
+        .additional-file-input {
+            display: none;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Video/Image Analysis</h1>
+        <textarea id="additionalInfo" placeholder="Enter additional information or notes here..."></textarea>
+        <form id="videoForm">
+            <input type="file" id="videoFile" accept="video/mp4, image/png, image/jpg, image/jpeg" required>
+            <div class="checkbox-group">
+                <label>
+                    <input type="checkbox" id="analyzeVideo">
+                    Analyze Video/Image (Brightness, Darkness, Distortion)
+                </label>
+                <label>
+                    <input type="checkbox" id="checkBackground">
+                    Check Background (Real/Fake)
+                </label>
+                <label>
+                    <input type="checkbox" id="checkPostbox">
+                    Check for Black Postbox
+                </label>
+                <label>
+                    <input type="checkbox" id="extractOTP">
+                    Extract OTP from Video
+                </label>
+                <label>
+                    <input type="checkbox" id="analyzeFaces">
+                    Analyze Faces (Age, Gender, Race)
+                </label>
+                <label>
+                    <input type="checkbox" id="checkPackage">
+                    Package Returns
+                </label>
+                <label>
+                    <input type="checkbox" id="deepfakeDetection">
+                    Deepfake Detection
+                </label>
+                <label>
+                    <input type="checkbox" id="compareFaces">
+                    Compare Faces (Image Only)
+                </label>
+            </div>
+            <div id="additionalFileInputContainer" class="additional-file-input">
+                <label for="additionalFile">Reference Image:</label>
+                <input type="file" id="additionalFile" accept="image/png, image/jpg, image/jpeg">
+            </div>
+            <button type="submit" class="button">Process Video/Image</button>
+        </form>
+        <div class="results" id="results"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const compareFacesCheckbox = document.getElementById('compareFaces');
+            const additionalFileInputContainer = document.getElementById('additionalFileInputContainer');
+            
+            compareFacesCheckbox.addEventListener('change', () => {
+                if (compareFacesCheckbox.checked) {
+                    additionalFileInputContainer.style.display = 'block';
+                } else {
+                    additionalFileInputContainer.style.display = 'none';
+                }
+            });
+        });
+
+        document.getElementById('videoForm').addEventListener('submit', async function (event) {
+            event.preventDefault(); // Prevent default form submission
+
+            const videoFile = document.getElementById('videoFile').files[0];
+            
+            const fileType=videoFile.type;
+            let fileCategory;
+            if (fileType.startsWith("image/")) {
+                fileCategory = "Image";
+            } else if (fileType.startsWith("video/")) {
+                fileCategory = "Video";
+            } else {
+                fileCategory = "Unknown";
+            }
+            
+            const addFile = document.getElementById('additionalFile').files[0];
+            const analyzeVideo = document.getElementById('analyzeVideo').checked;
+            const checkBackground = document.getElementById('checkBackground').checked;
+            const checkPostbox = document.getElementById('checkPostbox').checked;
+            const extractOTP = document.getElementById('extractOTP').checked;
+            const analyzeFaces = document.getElementById('analyzeFaces').checked;
+            const checkPackage = document.getElementById('checkPackage').checked;
+            const deepfakeDetection = document.getElementById('deepfakeDetection').checked;
+            const compareFaces = document.getElementById('compareFaces').checked;
+            const additionalInfo = document.getElementById('additionalInfo').value;
+
+            const formData = new FormData();
+            formData.append('additional_info', additionalInfo);
+
+            const requests = [];
+
+            if (analyzeVideo) {
+                if (fileCategory == "Image") requests.push(processRequest('http://127.0.0.1:8000/analyze_image/', formData, videoFile));
+                if (fileCategory == "Video") requests.push(processRequest('http://127.0.0.1:8000/analyze_video/', formData, videoFile));
+            }
+            if (checkBackground) {
+                requests.push(processRequest('http://127.0.0.1:8000/check_background/', formData, videoFile));
+            }
+            if (checkPostbox) {
+                requests.push(processRequest('http://127.0.0.1:8000/check_postbox/', formData, videoFile));
+            }
+            if (extractOTP) {
+                requests.push(processRequest('http://127.0.0.1:8000/extract_otp/', formData, videoFile));
+            }
+            if (analyzeFaces) {
+                requests.push(processRequest('http://127.0.0.1:8000/analyze_faces/', formData, videoFile));
+            }
+            if (checkPackage) {
+                requests.push(processRequest('http://127.0.0.1:8000/check_package_with_bill/', formData, videoFile));
+            }
+            if (deepfakeDetection) {
+                requests.push(processRequest('http://127.0.0.1:8000/deepfake_detection/', formData, videoFile));
+            }
+            if (compareFaces) {
+                requests.push(processAddRequest('http://127.0.0.1:8000/compare_faces/', formData, videoFile, addFile));
+            }
+            try {
+                const results = await Promise.all(requests);
+                results.forEach(result => {
+                    displayResults(result);
+                });
+            } catch (error) {
+                displayError(error);
+            }
+        });
+
+        async function processRequest(url, formData, videoFile) {
+            console.log(`Sending request to ${url}`);
+            formData.append('video_file', videoFile); // Append the video file
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    body: formData
+                });
+                console.log(`Received response from ${url} with status ${response.status}`);
+                if (!response.ok) throw new Error(`Error ${response.status}: ${response.statusText}`);
+                return await response.json();
+            } catch (error) {
+                console.error('Request failed:', error);
+                throw error;
+            }
+        }
+
+        async function processAddRequest(url, formData, videoFile, addFile) {
+            console.log(`Sending request to ${url}`);
+            formData.append('image_file', videoFile); // Append the image file
+            formData.append('add_file', addFile) //Append secondary image file
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    body: formData
+                });
+                console.log(`Received response from ${url} with status ${response.status}`);
+                if (!response.ok) throw new Error(`Error ${response.status}: ${response.statusText}`);
+                return await response.json();
+            } catch (error) {
+                console.error('Request failed:', error);
+                throw error;
+            }
+        }
+
+        function displayResults(result) {
+            const resultsDiv = document.getElementById('results');
+            const pre = document.createElement('pre');
+            pre.textContent = JSON.stringify(result, null, 2);
+            resultsDiv.appendChild(pre);
+        }
+
+        function displayError(error) {
+            const resultsDiv = document.getElementById('results');
+            const pre = document.createElement('pre');
+            pre.textContent = `Error: ${error.message}`;
+            resultsDiv.appendChild(pre);
+        }
+    </script>
+</body>
+
+</html>
+    
